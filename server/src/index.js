@@ -17,6 +17,7 @@ const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const authorityRoutes = require('./routes/authority');
 const usersRoutes = require('./routes/users');
+const { startCronJobs } = require('./services/cronService');
 
 const app = express();
 
@@ -70,6 +71,7 @@ async function start() {
 
   await mongoose.connect(MONGODB_URI);
   console.log('MongoDB connected');
+  startCronJobs();
 
   app.listen(PORT, () => console.log(`Server running on :${PORT}`));
 }

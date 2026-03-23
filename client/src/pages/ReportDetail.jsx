@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { api, getErrorMessage } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../components/common/Badges';
+import SLABadge from '../components/SLABadge';
+import RTISection from '../components/RTISection';
+import MunicipalInfo from '../components/MunicipalInfo';
 
 const STEPS = ['pending', 'acknowledged', 'in_progress', 'resolved'];
 
@@ -85,6 +88,7 @@ export default function ReportDetail() {
               <CategoryBadge category={report.category} />
               <StatusBadge status={report.status} />
               <PriorityBadge priority={report.priority} />
+              <SLABadge createdAt={report.createdAt} status={report.status} resolvedAt={report.resolvedAt} />
               <span className="font-mono text-xs text-black/60">▲ {report.upvotes || 0}</span>
               <span className="font-mono text-xs text-black/50">{created}</span>
             </div>
@@ -93,6 +97,14 @@ export default function ReportDetail() {
             <div className="text-sm text-black/70">
               <b>Location:</b> {[loc.address, loc.ward ? `Ward ${loc.ward}` : '', loc.city].filter(Boolean).join(' · ')}
             </div>
+            <div className="rounded-lg border border-black/10 bg-white/60 p-3">
+              <div className="font-mono text-xs text-black/60">Reported to</div>
+              <div className="text-sm mt-1">
+                {report.municipalName || 'Municipal Corporation'}
+                {(loc.city || report.municipalState) ? ` · ${[loc.city, report.municipalState].filter(Boolean).join(', ')}` : ''}
+              </div>
+            </div>
+            {!report.municipalName ? <MunicipalInfo city={loc.city || ''} /> : null}
 
             {mlShow && (
               <div className="border border-black/10 rounded-lg p-4 bg-white/60">
@@ -169,6 +181,8 @@ export default function ReportDetail() {
               </MapContainer>
             </div>
           </div>
+
+          <RTISection report={report} onRefresh={load} />
         </div>
       </div>
     </div>

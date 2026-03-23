@@ -66,6 +66,15 @@ const ReportSchema = new mongoose.Schema(
     resolvedAt: { type: Date },
     emailSent: { type: Boolean, default: false },
     escalationEmailSent: { type: Boolean, default: false },
+    reminderEmailSent: { type: Boolean, default: false },
+    warningEmailSent: { type: Boolean, default: false },
+    rtiGenerated: { type: Boolean, default: false },
+    rtiGeneratedAt: { type: Date, default: null },
+    rtiPdfUrl: { type: String, default: '' },
+    emailSentAt: { type: Date, default: null },
+    municipalEmail: { type: String, default: '' },
+    municipalName: { type: String, default: '' },
+    municipalState: { type: String, default: '' },
   },
   { timestamps: true }
 );

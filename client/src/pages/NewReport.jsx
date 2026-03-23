@@ -4,6 +4,8 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { api, getErrorMessage } from '../utils/api';
+import { CITY_LIST, getMunicipalPreview } from '../utils/cityList';
+import MunicipalInfo from '../components/MunicipalInfo';
 
 const CATS = [
   { k: 'pothole', l: 'Pothole' },
@@ -42,6 +44,7 @@ export default function NewReport() {
   const [address, setAddress] = useState('');
   const [ward, setWard] = useState('');
   const [city, setCity] = useState('');
+  const [cityQuery, setCityQuery] = useState('');
   const [mlHint, setMlHint] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -93,6 +96,12 @@ export default function NewReport() {
       )),
     [category]
   );
+
+  const citySuggestions = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase();
+    if (!q) return CITY_LIST.slice(0, 8);
+    return CITY_LIST.filter((c) => c.toLowerCase().includes(q)).slice(0, 8);
+  }, [cityQuery]);
 
   async function useMyLocation() {
     if (!navigator.geolocation) return toast.error('Geolocation not supported');
@@ -195,9 +204,42 @@ export default function NewReport() {
               </div>
               <div>
                 <div className="font-mono text-xs text-black/60">City</div>
-                <input className="input mt-1" value={city} onChange={(e) => setCity(e.target.value)} />
+                <input
+                  className="input mt-1"
+                  value={city}
+                  onChange={(e) => {
+                    setCity(e.target.value);
+                    setCityQuery(e.target.value);
+                  }}
+                  placeholder="Type city name"
+                />
+                {citySuggestions.length > 0 && cityQuery.trim() ? (
+                  <div className="mt-2 rounded-lg border border-black/10 bg-white/70 p-2 max-h-32 overflow-auto">
+                    <div className="flex flex-wrap gap-2">
+                      {citySuggestions.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          className="rounded-md border border-black/15 px-2 py-1 text-xs hover:bg-black/5"
+                          onClick={() => {
+                            setCity(c);
+                            setCityQuery(c);
+                          }}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
+            <MunicipalInfo city={city} />
+            {city?.trim() ? (
+              <div className="text-xs text-black/60 font-mono">
+                This report will be sent to: {getMunicipalPreview(city).name}
+              </div>
+            ) : null}
             <div>
               <div className="font-mono text-xs text-black/60">Address</div>
               <input className="input mt-1" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="auto-filled from pin" />

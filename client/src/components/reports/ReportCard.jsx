@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CategoryBadge, StatusBadge } from '../common/Badges';
+import SLABadge from '../SLABadge';
 
 export default function ReportCard({ report }) {
   const img = report.images?.[0] || '/placeholder.png';
@@ -16,6 +17,7 @@ export default function ReportCard({ report }) {
           <CategoryBadge category={report.category} />
           <StatusBadge status={report.status} />
         </div>
+        <SLABadge createdAt={report.createdAt} status={report.status} resolvedAt={report.resolvedAt} />
         <div className="font-display text-xl tracking-wide leading-none">{report.title}</div>
         <div className="text-sm text-black/70 clamp-2">{report.description}</div>
         <div className="flex items-center justify-between text-xs font-mono text-black/60 pt-1">

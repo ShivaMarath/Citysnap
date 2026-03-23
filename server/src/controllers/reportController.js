@@ -1,8 +1,13 @@
 const Report = require('../models/Report');
 const User = require('../models/User');
+const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
 const { classifyImage } = require('../services/mlService');
 const { uploadReportImage } = require('../services/cloudinaryService');
-const { sendNewReportEmail, sendEscalationEmail } = require('../services/emailService');
+const { sendNewIssueEmail, sendEscalationEmail, sendRTIReadyEmail } = require('../services/emailService');
+const { generateRTIPdf, daysBetween } = require('../services/rtiService');
+const { getMunicipalContact } = require('../utils/municipalContacts');
 
 function parseNumber(v) {
   const n = Number(v);
@@ -153,12 +158,25 @@ async function createReport(req, res) {
     statusHistory: [{ status: 'pending', updatedBy: req.user._id, note: 'Created' }],
   });
 
+  const municipalContact = getMunicipalContact(city || (report.location && report.location.city) || 'default');
+  report.municipalEmail = municipalContact.email || process.env.AUTHORITY_EMAIL || '';
+  report.municipalName = municipalContact.name || process.env.MUNICIPAL_CORP_NAME || 'Municipal Corporation';
+  report.municipalState = municipalContact.state || 'India';
+  await report.save();
+
   await User.updateOne({ _id: req.user._id }, { $inc: { reportsCount: 1 } });
 
   try {
-    const r = await sendNewReportEmail(report);
+    const reporter = await User.findById(req.user._id).select('name');
+    const r = await sendNewIssueEmail(
+      report,
+      reporter,
+      report.municipalEmail || process.env.AUTHORITY_EMAIL,
+      report.municipalName || process.env.MUNICIPAL_CORP_NAME || 'Municipal Corporation'
+    );
     if (r && r.ok) {
       report.emailSent = true;
+      report.emailSentAt = new Date();
       await report.save();
     }
   } catch (e) {
@@ -166,6 +184,82 @@ async function createReport(req, res) {
   }
 
   res.status(201).json({ isDuplicate: false, reportId: report._id, ml });
+}
+
+async function generateRti(req, res) {
+  try {
+    const report = await Report.findById(req.params.id).populate('reporter', 'name email');
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+    if (!['pending', 'acknowledged'].includes(report.status)) {
+      return res.status(400).json({ message: 'RTI allowed only for unresolved reports' });
+    }
+
+    const ageDays = daysBetween(new Date(), report.createdAt);
+    if (ageDays < 5) return res.status(400).json({ message: 'RTI generation allowed only after 5 days' });
+
+    if (!report.rtiGenerated) {
+      const pdf = await generateRTIPdf(report, report.reporter);
+      if (!pdf.url) return res.status(500).json({ message: 'Failed to generate RTI PDF' });
+
+      report.rtiGenerated = true;
+      report.rtiGeneratedAt = new Date();
+      report.rtiPdfUrl = pdf.url;
+      await report.save();
+
+      try {
+        const upvoterUsers = await User.find({ _id: { $in: report.upvotedBy || [] } }).select('email');
+        const recipients = new Set();
+        if (report.reporter?.email) recipients.add(report.reporter.email);
+        upvoterUsers.forEach((u) => {
+          if (u.email) recipients.add(u.email);
+        });
+        await sendRTIReadyEmail(report, [...recipients], pdf.url);
+      } catch (e) {
+        // never crash
+      }
+    }
+
+    return res.json({ success: true, pdfUrl: report.rtiPdfUrl });
+  } catch (e) {
+    return res.status(500).json({ message: e.message || 'Failed to generate RTI' });
+  }
+}
+
+async function rtiStatus(req, res) {
+  const report = await Report.findById(req.params.id).select('status createdAt rtiGenerated rtiGeneratedAt rtiPdfUrl');
+  if (!report) return res.status(404).json({ message: 'Report not found' });
+  const daysOld = daysBetween(new Date(), report.createdAt);
+  const eligible = ['pending', 'acknowledged'].includes(report.status) && daysOld >= 5;
+  res.json({
+    rtiGenerated: Boolean(report.rtiGenerated),
+    rtiGeneratedAt: report.rtiGeneratedAt || null,
+    rtiPdfUrl: report.rtiPdfUrl || '',
+    daysOld,
+    eligible,
+  });
+}
+
+async function downloadRti(req, res) {
+  const report = await Report.findById(req.params.id).select('rtiGenerated rtiPdfUrl');
+  if (!report) return res.status(404).json({ message: 'Report not found' });
+  if (!report.rtiGenerated || !report.rtiPdfUrl) return res.status(404).json({ message: 'RTI not available' });
+
+  const filename = `RTI-${String(report._id).slice(-8)}.pdf`;
+  if (report.rtiPdfUrl.startsWith('/uploads/')) {
+    const absolutePath = path.join(__dirname, '..', '..', report.rtiPdfUrl);
+    if (!fs.existsSync(absolutePath)) return res.status(404).json({ message: 'RTI file not found' });
+    return res.download(absolutePath, filename);
+  }
+
+  try {
+    const remote = await axios.get(report.rtiPdfUrl, { responseType: 'stream' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    remote.data.pipe(res);
+    return null;
+  } catch (e) {
+    return res.status(500).json({ message: 'Failed to download RTI PDF' });
+  }
 }
 
 async function upvoteReport(req, res) {
@@ -216,6 +310,9 @@ module.exports = {
   myReports,
   getReport,
   createReport,
+  generateRti,
+  rtiStatus,
+  downloadRti,
   upvoteReport,
   deleteReport,
 };
