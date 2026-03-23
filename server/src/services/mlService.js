@@ -36,11 +36,12 @@ function mapRoboflowRawClassToCategory(rawClass) {
 }
 
 function modelForCategory(userCategory) {
-  if (userCategory === 'pothole') return process.env.ROBOFLOW_POTHOLE_MODEL;
-  if (userCategory === 'garbage') return process.env.ROBOFLOW_GARBAGE_MODEL;
-  if (userCategory === 'flood') return process.env.ROBOFLOW_FLOOD_MODEL;
-  if (userCategory === 'streetlight') return process.env.ROBOFLOW_STREETLIGHT_MODEL;
-  if (userCategory === 'infrastructure') return process.env.ROBOFLOW_INFRASTRUCTURE_MODEL;
+  const key = String(userCategory || '').toLowerCase().trim();
+  if (key === 'pothole') return process.env.ROBOFLOW_POTHOLE_MODEL;
+  if (key === 'garbage') return process.env.ROBOFLOW_GARBAGE_MODEL;
+  if (key === 'flooding' || key === 'flood' || key === 'waterlogging' || key === 'water_logging') return process.env.ROBOFLOW_FLOOD_MODEL;
+  if (key === 'streetlight') return process.env.ROBOFLOW_STREETLIGHT_MODEL;
+  if (key === 'infrastructure') return process.env.ROBOFLOW_INFRASTRUCTURE_MODEL;
   return process.env.ROBOFLOW_POTHOLE_MODEL || process.env.ROBOFLOW_GARBAGE_MODEL || process.env.ROBOFLOW_STREETLIGHT_MODEL || process.env.ROBOFLOW_FLOOD_MODEL || process.env.ROBOFLOW_INFRASTRUCTURE_MODEL;
 }
 
