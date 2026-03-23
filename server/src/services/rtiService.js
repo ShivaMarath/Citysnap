@@ -33,8 +33,10 @@ async function uploadPdfToCloudinary(localPath) {
       use_filename: true,
       unique_filename: false,
     });
+    console.log(`[Cloudinary] RTI PDF uploaded successfully: ${result.secure_url}`);
     return result.secure_url;
   } catch (e) {
+    console.warn(`[Cloudinary] RTI PDF upload failed. Using local fallback. Reason: ${e.message || 'unknown error'}`);
     return null;
   }
 }

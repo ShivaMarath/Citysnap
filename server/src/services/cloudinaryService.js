@@ -35,6 +35,7 @@ async function uploadReportImage(localPath) {
       // ignore
     }
 
+    console.log(`[Cloudinary] Image uploaded successfully: ${res.secure_url}`);
     return { url: res.secure_url, source: 'cloudinary' };
   } catch (e) {
     const filename = path.basename(localPath);
