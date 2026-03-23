@@ -7,11 +7,10 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 // Support env placed either in server root (`server/.env`) or inside `server/src/.env`.
-// We load root first, then let `src/.env` override when present.
+// We load root first, then load `src/.env` without overriding existing values.
 const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
-// Override because root `.env` may define the key as empty (e.g. `ROBOFLOW_API_KEY=`).
-dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');

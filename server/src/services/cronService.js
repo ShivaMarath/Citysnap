@@ -36,7 +36,10 @@ async function run72HourReminder() {
         report.emailSentAt = new Date();
         await report.save();
       }
-      console.log(`[${ts()}] 72hr reminder ${sent.ok ? 'sent' : 'skipped'} for ${report._id}`);
+      console.log(
+        `[${ts()}] 72hr reminder ${sent.ok ? 'sent' : 'skipped'} for ${report._id}` +
+          (sent.ok ? '' : ` | reason: ${sent.message || 'unknown error'}`)
+      );
     }
   } catch (e) {
     console.error(`[${ts()}] 72hr reminder task failed`, e.message);
@@ -61,7 +64,10 @@ async function run5DayWarning() {
         report.emailSentAt = new Date();
         await report.save();
       }
-      console.log(`[${ts()}] 5-day warning ${sent.ok ? 'sent' : 'skipped'} for ${report._id}`);
+      console.log(
+        `[${ts()}] 5-day warning ${sent.ok ? 'sent' : 'skipped'} for ${report._id}` +
+          (sent.ok ? '' : ` | reason: ${sent.message || 'unknown error'}`)
+      );
     }
   } catch (e) {
     console.error(`[${ts()}] 5-day warning task failed`, e.message);
@@ -96,8 +102,11 @@ async function run7DayRTI() {
         if (u && u.email) recipients.add(u.email);
       });
       const list = [...recipients];
-      await sendRTIReadyEmail(report, list, pdf.url);
-      console.log(`[${ts()}] RTI generated and notified for ${report._id}`);
+      const notify = await sendRTIReadyEmail(report, list, pdf.url);
+      console.log(
+        `[${ts()}] RTI generated; notify ${notify.ok ? 'sent' : 'skipped'} for ${report._id}` +
+          (notify.ok ? '' : ` | reason: ${notify.message || 'unknown error'}`)
+      );
     }
   } catch (e) {
     console.error(`[${ts()}] 7-day RTI task failed`, e.message);

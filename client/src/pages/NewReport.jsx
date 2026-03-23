@@ -129,6 +129,10 @@ export default function NewReport() {
 
       const res = await api.post('/reports', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setMlHint(res.data.ml || null);
+      if (res.data?.ml) {
+        const m = res.data.ml;
+        toast(`ML: ${m.category || 'other'} (${Math.round(Number(m.confidence || 0) * 100)}%)`);
+      }
 
       if (res.data.isDuplicate) toast.success('Similar issue found nearby — upvoted!');
       else toast.success('Report submitted! Authorities notified.');
@@ -181,9 +185,9 @@ export default function NewReport() {
           <div>
             <div className="font-mono text-xs text-black/60 mb-2">Category</div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">{catButtons}</div>
-            {mlHint?.confidence > 0 && (
+            {mlHint && (
               <div className="mt-3 text-xs font-mono text-black/70">
-                ML hint: <b>{mlHint.category}</b> ({Math.round(mlHint.confidence * 100)}%) — {mlHint.source}
+                ML hint: <b>{mlHint.category || 'other'}</b> ({Math.round(Number(mlHint.confidence || 0) * 100)}%) — {mlHint.source || 'n/a'}
               </div>
             )}
           </div>

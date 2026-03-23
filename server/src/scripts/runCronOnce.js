@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const { runAllCronTasksOnce } = require('../services/cronService');
 
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
-dotenv.config({ path: path.join(__dirname, '..', '.env'), override: true });
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/citysnap';
 

@@ -76,7 +76,10 @@ export default function ReportDetail() {
   const loc = report.location || {};
   const coords = [loc.coordinates?.[1] || 0, loc.coordinates?.[0] || 0];
   const created = report.createdAt ? new Date(report.createdAt).toLocaleString() : '';
-  const mlShow = report.mlConfidence > 0;
+  const mlShow =
+    typeof report.mlConfidence === 'number' ||
+    Boolean(report.mlCategory) ||
+    Boolean(report.mlRawClass);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -110,7 +113,8 @@ export default function ReportDetail() {
               <div className="border border-black/10 rounded-lg p-4 bg-white/60">
                 <div className="font-mono text-xs text-black/60">ML detection</div>
                 <div className="text-sm mt-1">
-                  Category: <b>{report.mlCategory}</b> · Confidence: <b>{Math.round(report.mlConfidence * 100)}%</b>{' '}
+                  Category: <b>{report.mlCategory || 'other'}</b> · Confidence:{' '}
+                  <b>{Math.round(Number(report.mlConfidence || 0) * 100)}%</b>{' '}
                   {report.mlRawClass ? (
                     <>
                       · Class: <span className="font-mono">{report.mlRawClass}</span>
