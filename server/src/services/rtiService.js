@@ -30,8 +30,9 @@ async function uploadPdfToCloudinary(localPath) {
     const result = await cloudinary.uploader.upload(localPath, {
       folder: 'citysnap/rti',
       resource_type: 'raw',
+      access_mode: 'public',
       use_filename: true,
-      unique_filename: false,
+      unique_filename: true,
     });
     console.log(`[Cloudinary] RTI PDF uploaded successfully: ${result.secure_url}`);
     return result.secure_url;
@@ -131,8 +132,6 @@ async function generateRTIPdf(report, reporter) {
       stream.on('error', reject);
     });
 
-    const cloudUrl = await uploadPdfToCloudinary(localPath);
-    if (cloudUrl) return { url: cloudUrl, localPath };
     return { url: `/uploads/rti/${path.basename(localPath)}`, localPath };
   } catch (e) {
     return { url: '', localPath: '', error: e.message || 'Failed to generate RTI PDF' };

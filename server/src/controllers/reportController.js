@@ -251,15 +251,24 @@ async function downloadRti(req, res) {
     return res.download(absolutePath, filename);
   }
 
-  try {
-    const remote = await axios.get(report.rtiPdfUrl, { responseType: 'stream' });
+   try {
+    const remote = await axios.get(report.rtiPdfUrl, {
+      responseType: 'stream',
+      validateStatus: (s) => s === 200,
+    });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    remote.data.on('error', (err) => {
+      console.error('[downloadRti] stream error:', err.message);
+      if (!res.headersSent) res.status(500).json({ message: 'Stream interrupted' });
+      else res.end();
+    });
     remote.data.pipe(res);
-    return null;
   } catch (e) {
-    return res.status(500).json({ message: 'Failed to download RTI PDF' });
+    console.error('[downloadRti] failed. URL:', report.rtiPdfUrl, 'Error:', e.message, 'Status:', e.response?.status);
+    return res.status(500).json({ message: 'Failed to download RTI PDF', detail: e.message });
   }
+
 }
 
 async function upvoteReport(req, res) {
